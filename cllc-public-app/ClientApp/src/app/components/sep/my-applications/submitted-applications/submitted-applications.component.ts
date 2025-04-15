@@ -91,22 +91,16 @@ export class SubmittedApplicationsComponent implements OnInit {
   ngOnInit(): void {
     this.sepDataService.getSubmittedApplications()
       .subscribe(data => this.dataSource.data = data);
+
     if(this.dataSource){
       this.dataSource.paginator = this.paginator;
       this.dataSource.sort = this.sort;
     }
   }
 
-
   openApplication(app: SepApplicationSummary) {
-    if (app.eventStatus === "Draft") {
-      this.router.navigateByUrl(`sep/application/${app.localId}/${this.getLastStep(app.lastStepCompleted)}`);
-    } else {
-      this.router.navigateByUrl(`sep/application-summary/${app.specialEventId}`);
-    }
+    this.router.navigateByUrl(`sep/application-summary/${app.specialEventId}`);
   }
-
-
 
   getLastStep(stepCompleted: string): string {
     const lastIndex = SEP_APPLICATION_STEPS.indexOf(stepCompleted);
@@ -201,7 +195,7 @@ export class SubmittedApplicationsComponent implements OnInit {
             }
           });
         }
-    
+
         const localId = await this.db.saveSepApplication({
           ...clone,
           dateAgreedToTsAndCs: undefined,
@@ -209,16 +203,10 @@ export class SubmittedApplicationsComponent implements OnInit {
           dateCreated: new Date()
         } as SepApplication);
         this.router.navigateByUrl(`/sep/application/${localId}/applicant`);
-
-
       });
-
-    
   }
 
-
   async cancelApplication(appSummary: SepApplicationSummary): Promise<void> {
-
     // open dialog, get reference and process returned data from dialog
     const dialogConfig = {
       disableClose: true,
@@ -231,41 +219,40 @@ export class SubmittedApplicationsComponent implements OnInit {
     };
 
     const dialogRef = this.dialog.open(CancelSepApplicationDialogComponent, dialogConfig);
-    dialogRef.afterClosed()  
-      .subscribe(async ([cancelApplication, reason]) => {
-      if (cancelApplication) {
-        if (appSummary.specialEventId)
-        {
-          const result = await this.sepDataService.updateSepApplication({ id: appSummary.specialEventId, cancelReason: reason, eventStatus: "Cancelled" } as SepApplication, appSummary.specialEventId)
+
+    dialogRef.afterClosed().subscribe(async ([cancelApplication, reason]) => {
+      if (cancelApplication !== true) {
+        return;
+      }
+
+      if (appSummary.specialEventId) {
+        // If this application was submitted, update the application with a cancelled status/reason.
+        await this.sepDataService
+          .updateSepApplication(
+            {
+              id: appSummary.specialEventId,
+              cancelReason: reason,
+              eventStatus: "Cancelled",
+            } as SepApplication,
+            appSummary.specialEventId
+          )
           .toPromise();
+      }
 
-          if (appSummary.localId) {
-            await this.db.applications.update(+appSummary.localId, result);    
-          }
-          this.router.navigateByUrl(`/sep/my-applications`)
-          .then(() => {
-            window.location.reload();
-          });
-        }
-    }
-  });
-}
+      if (appSummary.localId) {
+        // If this application was cached (submitted or draft), remove it from local storage
+        await this.db.applications.delete(Number(appSummary.localId));
+      }
 
-  // async getApplications() {
-  //   let applications = await this.db.applications.toArray();
-  //   applications = applications.filter(app => app.eventStatus === 'Draft');
-  //   applications = applications.sort((a, b) => {
-  //     const dateA = new Date(a.dateCreated).getTime();
-  //     const dateB = new Date(b.dateCreated).getTime();
-  //     return dateB - dateA;
-  //   });
-  //   this.applications = applications;
-  // }
+      this.router.navigateByUrl(`/sep/my-applications`).then(() => {
+        window.location.reload();
+      });
+    });
+  }
 
   /**
- * Redirect to payment processing page (Express Pay / Bambora service)
- * */
-
+   * Redirect to payment processing page (Express Pay / Bambora service)
+   **/
   private submitPayment(applicationId: string) {
     return this.paymentDataService.getPaymentURI("specialEventInvoice", applicationId)
       .pipe(map(jsonUrl => {

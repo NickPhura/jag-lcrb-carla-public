@@ -9,19 +9,26 @@ import { IndexedDBService } from "@services/indexed-db.service";
 import { SepApplication } from "@models/sep-application.model";
 import { environment } from "environments/environment";
 import { SpecialEventsDataService } from "@services/special-events-data.service";
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatSnackBar } from "@angular/material/snack-bar";
 
-export const SEP_APPLICATION_STEPS = ["applicant", "eligibility", "event", "liquor", "summary"];
+export const SEP_APPLICATION_STEPS = [
+  "applicant",
+  "eligibility",
+  "event",
+  "liquor",
+  "summary",
+];
 
 @Component({
   selector: "app-sep-application",
   templateUrl: "./sep-application.component.html",
-  styleUrls: ["./sep-application.component.scss"]
+  styleUrls: ["./sep-application.component.scss"],
 })
 export class SepApplicationComponent implements OnInit {
   faCheck = faCheck;
   securityScreeningEnabled: boolean;
-  localId: number;
+  id?: string;
+  localId?: number;
   isFree = false;
   hasLGApproval = false;
   isDevEnv = environment.development;
@@ -44,18 +51,26 @@ export class SepApplicationComponent implements OnInit {
     return index;
   }
 
-  constructor(private store: Store<AppState>,
+  constructor(
+    private store: Store<AppState>,
     public snackBar: MatSnackBar,
     private db: IndexedDBService,
     private cd: ChangeDetectorRef,
     private sepDataService: SpecialEventsDataService,
-    private route: ActivatedRoute) {
-    this.store.select(state => state.currentAccountState.currentAccount)
-      .subscribe(account => this.account = account);
-    this.route.paramMap.subscribe(pmap => {
+    private route: ActivatedRoute
+  ) {
+    this.store
+      .select((state) => state.currentAccountState.currentAccount)
+      .subscribe((account) => (this.account = account));
+
+    this.route.paramMap.subscribe((paramsMap) => {
       // if the id is 'new' set it to null ( this will dictate whether the save is a create or an update)
-      this.localId = pmap.get("id") === "new" ? null : parseInt(pmap.get("id"), 10);
-      this.step = pmap.get("step");
+      this.id = paramsMap.get("id") === "new" ? null : paramsMap.get("id");
+      this.step = 'liquor';
+    });
+
+    this.route.queryParamMap.subscribe((paramsMap) => {
+      this.localId = Number(paramsMap.get("localId"));
     });
   }
 
@@ -65,15 +80,30 @@ export class SepApplicationComponent implements OnInit {
 
   async getApplication() {
     if (this.localId) {
-      await this.db.getSepApplication(this.localId)
-        .then(app => {
+      await this.db.getSepApplication(this.localId).then(
+        (app) => {
           const value = JSON.parse(JSON.stringify(app));
           delete value.totalMaximumNumberOfGuests;
           this.application = Object.assign(new SepApplication(), value);
-          this.isFormEditable = this.application.eventStatus.toLowerCase() === "draft";     
-        }, err => {
+          this.isFormEditable =
+            this.application.eventStatus.toLowerCase() === "draft";
+        },
+        (err) => {
           console.error(err);
-        });
+        }
+      );
+
+      return;
+    }
+
+    if (this.id) {
+      this.sepDataService.getApplication(this.id).subscribe((app) => {
+        console.log(app);
+        this.application = Object.assign(new SepApplication(), app);
+        console.log(this.application);
+        this.isFormEditable =
+          this.application.eventStatus.toLowerCase() === "draft";
+      });
     }
   }
 
@@ -84,7 +114,9 @@ export class SepApplicationComponent implements OnInit {
 
   isStepCompleted(step: string): boolean {
     let completed = false;
-    const indexOfLastStep = this.steps.indexOf(this?.application?.lastStepCompleted);
+    const indexOfLastStep = this.steps.indexOf(
+      this?.application?.lastStepCompleted
+    );
     completed = this.steps.indexOf(step) <= indexOfLastStep;
     return completed;
   }
@@ -93,58 +125,80 @@ export class SepApplicationComponent implements OnInit {
     this.savingToAPI = true;
     try {
       const appData = await this.db.getSepApplication(this.localId);
-      if (appData.id) { // do an update (the record exists in dynamics)
-      try {
-        const result = await this.sepDataService.updateSepApplication({ ...appData, invoiceTrigger: true } as SepApplication, appData.id)
-        .toPromise();
-        if (result.localId) {
-        await this.db.saveSepApplication(result);
+      if (appData.id) {
+        // do an update (the record exists in dynamics)
+        try {
+          const result = await this.sepDataService
+            .updateSepApplication(
+              { ...appData, invoiceTrigger: true } as SepApplication,
+              appData.id
+            )
+            .toPromise();
+          if (result.localId) {
+            await this.db.saveSepApplication(result);
+          }
+        } catch (error) {
+          this.snackBar.open("Unable to update application", "", {
+            duration: 2500,
+            panelClass: ["red-snackbar"],
+          });
         }
-      } catch (error) {
-        this.snackBar.open("Unable to update application", '', { duration: 2500, panelClass: ['red-snackbar'] });
-      }
-      } else { // create a new record
-      try {
-        const result = await this.sepDataService.createSepApplication({ ...appData, invoiceTrigger: true } as SepApplication)
-        .toPromise();
-        if (result.localId) {
-        await this.db.saveSepApplication(result);
-        this.localId = result.localId;
+      } else {
+        // create a new record
+        try {
+          const result = await this.sepDataService
+            .createSepApplication({
+              ...appData,
+              invoiceTrigger: true,
+            } as SepApplication)
+            .toPromise();
+          if (result.localId) {
+            await this.db.saveSepApplication(result);
+            this.localId = result.localId;
+          }
+        } catch (error) {
+          this.snackBar.open("Unable to create application", "", {
+            duration: 2500,
+            panelClass: ["red-snackbar"],
+          });
         }
-      } catch (error) {
-        this.snackBar.open("Unable to create application", '', { duration: 2500, panelClass: ['red-snackbar'] });
-      }
       }
     } catch (error) {
       console.error("Error retrieving application data:", error);
-      this.snackBar.open("Unable to retrieve application data", '', { duration: 2500, panelClass: ['red-snackbar'] });
+      this.snackBar.open("Unable to retrieve application data", "", {
+        duration: 2500,
+        panelClass: ["red-snackbar"],
+      });
     } finally {
       this.savingToAPI = false;
     }
   }
 
-  completeStep(step: string, stepper: any, data: SepApplication, saveToApi: boolean) {
-    
+  completeStep(
+    step: string,
+    stepper: any,
+    data: SepApplication,
+    saveToApi: boolean
+  ) {
     let lastStepCompleted = step;
-    if (this.application)
-    {
-      const currentLastStepNumber = this.steps.indexOf(this.application.lastStepCompleted);
+    if (this.application) {
+      const currentLastStepNumber = this.steps.indexOf(
+        this.application.lastStepCompleted
+      );
       const newLastStepNumber = this.steps.indexOf(step);
-      if (newLastStepNumber > currentLastStepNumber)
-      {
+      if (newLastStepNumber > currentLastStepNumber) {
         this.application.lastStepCompleted = step;
-      } 
-      else
-      {
+      } else {
         lastStepCompleted = this.application.lastStepCompleted;
-      }     
+      }
     }
-    
+
     data.lastStepCompleted = lastStepCompleted;
     this.saveToDb(data);
     this.cd.detectChanges();
     if (saveToApi) {
-      this.saveToAPI().then(_ => { // Save to dynamics on transitions on DEV
+      this.saveToAPI().then((_) => {
+        // Save to dynamics on transitions on DEV
         stepper.next();
       });
     } else {

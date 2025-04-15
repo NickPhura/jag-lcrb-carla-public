@@ -316,6 +316,7 @@ import { PoliceGridInProgressComponent } from './components/police-representativ
 import { PoliceGridApprovedComponent } from './components/police-representative/police-grid-approved/police-grid-approved.component';
 import { PoliceGridDeniedComponent } from './components/police-representative/police-grid-denied/police-grid-denied.component';
 import { SubmittedApplicationsComponent } from './components/sep/my-applications/submitted-applications/submitted-applications.component';
+import { DraftApplicationsComponent } from './components/sep/my-applications/draft-applications/draft-applications.component';
 import { SepPaymentConfirmationComponent } from "@components/sep/payment-confirmation/payment-confirmation.component";
 import { AcceptDialogComponent } from './components/police-representative/police-summary/accept-dialog/accept-dialog.component';
 import { DenyDialogComponent } from './components/police-representative/police-summary/deny-dialog/deny-dialog.component';
@@ -517,6 +518,7 @@ import { MaintenanceBannerComponent } from "@components/maintenance-banner/maint
     PoliceGridApprovedComponent,
     PoliceGridDeniedComponent,
     SubmittedApplicationsComponent,
+    DraftApplicationsComponent,
     AcceptDialogComponent,
     DenyDialogComponent,
     CancelDialogComponent,

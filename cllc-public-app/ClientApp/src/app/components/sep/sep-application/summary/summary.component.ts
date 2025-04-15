@@ -163,7 +163,7 @@ export class SummaryComponent implements OnInit {
 
   /**
  * Payment verification
- * */
+ **/
   verify_payment() {
     this.retryCount++;
     this.paymentDataService.verifyPaymentURI("specialEventInvoice", this.appId).subscribe(

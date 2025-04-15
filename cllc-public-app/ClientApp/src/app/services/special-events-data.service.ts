@@ -4,7 +4,7 @@ import { catchError } from "rxjs/operators";
 import { Observable, of } from "rxjs";
 import { DataService } from "./data.service";
 import { SepApplication, SepTermAndCondtion } from "@models/sep-application.model";
-import { SepApplicationSummary } from "@models/sep-application-summary.model";
+import { SepApplicationSummary, SepDraftApplicationSummary } from "@models/sep-application-summary.model";
 import { SepDrinkType } from "@models/sep-drink-type.model";
 import { SepPoliceJobSummary } from "@models/sep-police-job-summary";
 import { SepPoliceHome } from "@models/sep-police-home";
@@ -30,9 +30,44 @@ export class SpecialEventsDataService extends DataService {
       .pipe(catchError(this.handleError));
   }
 
+  /**
+   * Get a special event application by id.
+   *
+   * @param {string} id - special event application id.
+   * @return {*}  {Observable<SepApplication>}
+   * @memberof SpecialEventsDataService
+   */
+  getApplication(id: string): Observable<SepApplication> {
+    const apiPath = `api/special-events/${id}`;
+    return this.http
+      .get<SepApplication>(apiPath, { headers: this.headers })
+      .pipe(catchError(this.handleError));
+  }
+
+  /**
+   * Get all submitted applications.
+   *
+   * @return {*}  {Observable<SepApplicationSummary[]>}
+   * @memberof SpecialEventsDataService
+   */
   getSubmittedApplications(): Observable<SepApplicationSummary[]> {
     const apiPath = `api/special-events/current/submitted`;
     return this.http.get<SepApplicationSummary[]>(apiPath, { headers: this.headers })
+      .pipe(catchError(this.handleError));
+  }
+
+  /**
+   * Get all the draft applications.
+   * 
+   * Note: This only includes drafts that were complete enough to persist. Drafts that are not sufficiently complete 
+   * are stored in local storage only and are not returned by this method.
+   *
+   * @return {*}  {Observable<SepDraftApplicationSummary[]>}
+   * @memberof SpecialEventsDataService
+   */
+  getDraftApplications(): Observable<SepDraftApplicationSummary[]> {
+    const apiPath = `api/special-events/current/draft`;
+    return this.http.get<SepDraftApplicationSummary[]>(apiPath, { headers: this.headers })
       .pipe(catchError(this.handleError));
   }
 
@@ -52,8 +87,12 @@ export class SpecialEventsDataService extends DataService {
   }
 
   /**
-   * update a  special event application in Dynamics
-   * @param data - special event application data
+   * Update a special event application in Dynamics
+   *
+   * @param {SepApplication} data - special event application data
+   * @param {string} id - special event application id
+   * @return {*} 
+   * @memberof SpecialEventsDataService
    */
   updateSepApplication(data: SepApplication, id: string) {
     return this.http.put<SepApplication>(`api/special-events/${id}`, data, { headers: this.headers })

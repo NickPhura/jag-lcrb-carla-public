@@ -53,6 +53,43 @@ namespace Gov.Lclb.Cllb.Public.Controllers
             _pdfClient = pdfClient;
         }
 
+        // Get a single application by id.
+        [HttpGet("{id}")]
+        public IActionResult GetApplication(string id)
+        {
+            string[] expand = new[]
+            {
+                "adoxio_PoliceRepresentativeId",
+                "adoxio_PoliceAccountId",
+                "adoxio_specialevent_specialeventtsacs"
+            };
+
+            ViewModels.SpecialEvent application = null;
+
+            if (!string.IsNullOrEmpty(id))
+            {
+                try
+                {
+                    MicrosoftDynamicsCRMadoxioSpecialevent rawApplication =
+                        _dynamicsClient.Specialevents.GetByKey(id, expand: expand);
+
+                    application = rawApplication.ToViewModel(_dynamicsClient);
+                }
+                catch (HttpOperationException httpOperationException)
+                {
+                    _logger.LogError(httpOperationException, "Error getting special event");
+                    return NotFound();
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogError(exception, "Unexpected Error getting special event");
+                    return NotFound();
+                }
+            }
+
+            return new JsonResult(application);
+        }
+
         // get summary list of applications past submission status
         [HttpGet("current/submitted")]
         public IActionResult GetCurrentSubmitted()
@@ -68,6 +105,32 @@ namespace Gov.Lclb.Cllb.Public.Controllers
 
             filter += $") and statuscode ne {(int)ViewModels.EventStatus.Draft}";
             filter += $" and statuscode ne {(int)ViewModels.EventStatus.Cancelled}";
+
+            var result = GetSepSummaries(filter);
+
+            return new JsonResult(result);
+        }
+
+        /// <summary>
+        /// GET summary list of draft applications.
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("current/draft")]
+        public IActionResult GetCurrentDraft()
+        {
+            UserSettings userSettings = UserSettings.CreateFromHttpContext(_httpContextAccessor);
+            string filter = $"(_adoxio_contactid_value eq {userSettings.ContactId}";
+
+            // accountID will be null if it is a BC Services Card
+            if (
+                userSettings.AccountId != null
+                && userSettings.AccountId != "00000000-0000-0000-0000-000000000000"
+            )
+            {
+                filter += $" or _adoxio_accountid_value eq {userSettings.AccountId}";
+            }
+
+            filter += $") and statuscode eq {(int)ViewModels.EventStatus.Draft}";
 
             var result = GetSepSummaries(filter);
 
@@ -1230,6 +1293,11 @@ namespace Gov.Lclb.Cllb.Public.Controllers
         [HttpPut("{eventId}")]
         public IActionResult UpdateSpecialEvent(string eventId, [FromBody] ViewModels.SpecialEvent specialEvent)
         {
+            Console.WriteLine("=======================================================");
+            Console.WriteLine(eventId);
+            Console.WriteLine("=======================================================");
+            _logger.LogInformation("{@SpecialEvent}", specialEvent);
+            Console.WriteLine("=======================================================");
             if (!ModelState.IsValid || String.IsNullOrEmpty(eventId) || eventId != specialEvent?.Id)
             {
                 return BadRequest();
@@ -1237,10 +1305,19 @@ namespace Gov.Lclb.Cllb.Public.Controllers
 
             UserSettings userSettings = UserSettings.CreateFromHttpContext(_httpContextAccessor);
             var existingEvent = GetSpecialEventData(eventId);
-           
-            if((existingEvent.Statuscode != (int?)EventStatus.Draft)){
-                  return BadRequest("Updating a special event is only allowed in Draft status.");
+            
+            _logger.LogInformation("{@existingEvent}", existingEvent);
+            Console.WriteLine("=======================================================");
+
+            // Only draft records may be updated, unless the update action is a cancellation (withdrawal)
+            if (
+                existingEvent.Statuscode != (int?)EventStatus.Draft
+                && specialEvent.EventStatus != EventStatus.Cancelled
+            )
+            {
+                return BadRequest("Updating a special event is only allowed in Draft status.");
             }
+
             if (existingEvent._adoxioAccountidValue != userSettings.AccountId &&
                existingEvent._adoxioContactidValue != userSettings.ContactId)
             {
