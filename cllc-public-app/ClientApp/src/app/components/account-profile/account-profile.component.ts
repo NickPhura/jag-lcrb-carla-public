@@ -28,6 +28,7 @@ import { MatDialog } from "@angular/material/dialog";
 import { Clipboard } from '@angular/cdk/clipboard';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { environment } from "environments/environment";
+import { FeatureFlagService } from "@services/feature-flag.service";
 
 // See the Moment.js docs for the meaning of these formats:
 // https://momentjs.com/docs/#/displaying/format/
@@ -115,9 +116,10 @@ export class AccountProfileComponent extends FormBase implements OnInit {
   validationMessages: string[];
   renewalType: string;
 
+  // Whether the ORV (Online Retailer Verification) feature is enabled or not
+  ORVEnabled: boolean = false;
   @ViewChild('badgeTemplateDialog') badgeTemplateDialog: TemplateRef<any>;
-  // 2024-09-13: Temporary disabling this until further development work can be completed to support this feature.
-  // generatedOrvCode: string = `<a href="#" onclick="window.open('https://orgbook-app-b7aa30-dev.apps.silver.devops.gov.bc.ca/verify/BC123456', '_blank', 'width=800,height=600'); return false;">Verify Retailer</a>`
+  generatedOrvCode: string = `<a href="#" onclick="window.open('https://orgbook-app-b7aa30-dev.apps.silver.devops.gov.bc.ca/verify/BC123456', '_blank', 'width=800,height=600'); return false;">Verify Retailer</a>`;
 
   get contacts(): FormArray {
     return this.form.get("otherContacts") as FormArray;
@@ -191,7 +193,8 @@ export class AccountProfileComponent extends FormBase implements OnInit {
 
   businessTypes = BUSINESS_TYPE_LIST;
 
-  constructor(private store: Store<AppState>,
+  constructor(
+    private store: Store<AppState>,
     private accountDataService: AccountDataService,
     private contactDataService: ContactDataService,
     private userDataService: UserDataService,
@@ -202,16 +205,20 @@ export class AccountProfileComponent extends FormBase implements OnInit {
     private tiedHouseService: TiedHouseConnectionsDataService,
     private dialog: MatDialog,
     private clipboard: Clipboard,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    public featureFlagService: FeatureFlagService,
   ) {
     super();
-    this.route.paramMap.subscribe(params => {
-      this.applicationId = params.get("applicationId");
-      this.applicationDataService.getApplicationById(this.applicationId)
-      .subscribe(res => {
-        this.application = res;
-      });
+    this.route.paramMap.subscribe((params) => {
+      this.applicationId = params.get('applicationId');
+
+      if (this.applicationId) {
+        this.applicationDataService.getApplicationById(this.applicationId).subscribe((res) => {
+          this.application = res;
+        });
+      }
     });
+
     this.route.paramMap.subscribe(params => this.renewalType = params.get("renewalType"));
     this.route.paramMap.subscribe(params => this.applicationMode = params.get("mode"));
   }
@@ -390,34 +397,32 @@ export class AccountProfileComponent extends FormBase implements OnInit {
     this.saveFormData = this.form.value;
 
     // normalize postal codes
-    this.form.get("businessProfile.mailingAddressPostalCode").setValue(
-      (this.form.get("businessProfile.mailingAddressPostalCode").value || "").replace(/\s+/g, "")
-    );
-    this.form.get("businessProfile.physicalAddressPostalCode").setValue(
-      (this.form.get("businessProfile.physicalAddressPostalCode").value || "").replace(/\s+/g, "")
-    );
+    this.form
+      .get('businessProfile.mailingAddressPostalCode')
+      .setValue((this.form.get('businessProfile.mailingAddressPostalCode').value || '').replace(/\s+/g, ''));
+    this.form
+      .get('businessProfile.physicalAddressPostalCode')
+      .setValue((this.form.get('businessProfile.physicalAddressPostalCode').value || '').replace(/\s+/g, ''));
 
-    //LCSD-7412
-    //Simplified vaidators for bcIncorporationNumber
-   // Incorporation Number	|incorporationNumber:	Registry number for Corporations |	Up to 10 alphanumeric characters.
-   
-    if (this.account.isPrivateCorporation() || this.account.businessType === "Society") {
-     this.form.get("businessProfile.bcIncorporationNumber")
-     .setValidators([Validators.pattern("^[A-Za-z0-9]{1,15}$")]);
-  } else {
-    this.form.get("businessProfile.bcIncorporationNumber").clearValidators();
+    // LCSD-7412
+    // Simplified vaidators for bcIncorporationNumber
+    // Incorporation Number	|incorporationNumber:	Registry number for Corporations |	Up to 10 alphanumeric characters.
+    if (this.account.isPrivateCorporation() || this.account.businessType === 'Society') {
+      this.form.get('businessProfile.bcIncorporationNumber').setValidators([Validators.pattern('^[A-Za-z0-9]{1,15}$')]);
+    } else {
+      this.form.get('businessProfile.bcIncorporationNumber').clearValidators();
+    }
 
     // Transform the accountUrls comma-separated string into an array
     const accountUrlsArray = this.splitAccountURLString(accountUrls);
-    const accountUrlsArrayControl = this.form.get("businessProfile.accountUrls") as FormArray;
+    const accountUrlsArrayControl = this.form.get('businessProfile.accountUrls') as FormArray;
     // Clear the existing account form controls, if any, so duplicate controls are not created if this function is
     // called multiple times
     accountUrlsArrayControl.clear();
     for (const accountUrl of accountUrlsArray) {
-        // Add a form control for each account URL
-        accountUrlsArrayControl.push(this.fb.control(accountUrl, [this.urlValidator]));
+      // Add a form control for each account URL
+      accountUrlsArrayControl.push(this.fb.control(accountUrl, [this.urlValidator]));
     }
-  }
   }
 
   private loadUser(user: User) {
@@ -453,13 +458,13 @@ export class AccountProfileComponent extends FormBase implements OnInit {
   }
 
   // 2024-09-13: Temporary disabling this until further development work can be completed to support this feature.
-  // onCopy(): void {
-  //   this.clipboard.copy(this.generatedOrvCode);
-  //   this.snackBar.open('HTML copied to clipboard', null, {
-  //     duration: 2000,
-  //   });
-  //   this.dialog.closeAll();
-  // }
+  onCopy(): void {
+    this.clipboard.copy(this.generatedOrvCode);
+    this.snackBar.open('HTML copied to clipboard', null, {
+      duration: 2000
+    });
+    this.dialog.closeAll();
+  }
 
   save(): Observable<boolean> {
     const _tiedHouse = this.tiedHouseFormData || {};
@@ -568,5 +573,31 @@ export class AccountProfileComponent extends FormBase implements OnInit {
         contactControls[c].markAsTouched();
       }
     }
+  }
+
+  /**
+   * Checks if the ORV (Online Retail Verification) button is enabled.
+   *
+   * @return {*}  {boolean}
+   * @memberof AccountProfileComponent
+   */
+  isORVEnabled(): boolean {
+    if (!this.ORVEnabled) {
+      // ORV is disabled at the feature flag level.
+      return false;
+    }
+
+    if (this.accountUrls?.controls?.length === 0) {
+      // No account URLs specified, ORV is enabled.
+      return true;
+    }
+
+    if (this.accountUrls?.controls?.length === 1 && this.accountUrls?.controls?.[0].value === '') {
+      // On account URL is specified (default empty field), but it is empty, ORV is enabled.
+      return true;
+    }
+
+    // One or more account URLs are specified, ORV is disabled.
+    return false;
   }
 }

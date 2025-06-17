@@ -71,25 +71,25 @@
     <input class="form-control" style="max-width: 450px; min-width: 250px;" type="text" disabled
            [value]="account?.name || ''">
   </app-field>
-  
+
   <div formArrayName="accountUrls" class="mb-2 account-urls">
     <label>Account URL(s)</label>
 
     <div *ngFor="let accountUrl of accountUrls.controls; let i = index">
-        <app-field 
-            [required]="false" 
+        <app-field
+            [required]="false"
             [valid]="accountUrl.valid || !accountUrl.touched"
             errorMessage="Please enter a valid Account URL (i.e. www.gov.bc.ca)">
 
             <input class="form-control" style="width: 350px;" type="url" [formControl]="accountUrl">
 
-            <button *ngIf="i > 0" (click)="removeAccountUrl(i)" type="button" class="btn btn-md btn-icon" aria-label="Remove">    
+            <button *ngIf="i > 0" (click)="removeAccountUrl(i)" type="button" class="btn btn-md btn-icon" aria-label="Remove">
                 <fa-icon [icon]="faTrash" style="margin-right: 10px"></fa-icon>
             </button>
         </app-field>
     </div>
-    
-    <button (click)="addAccountUrl()" type="button" class="btn btn-md btn-icon" aria-label="Add">    
+
+    <button (click)="addAccountUrl()" type="button" class="btn btn-md btn-icon" aria-label="Add">
         <fa-icon [icon]="faPlus" style="margin-right: 10px"></fa-icon>
         <span>Add Another URL</span>
     </button>
@@ -107,7 +107,7 @@
              errorMessage="Please select a business type from the dropdown list">
     <select class="form-control" disabled readonly style="width: 250px;" [value]="account?.businessType" formControlName="businessType">
       <option *ngFor="let item of businessTypes" [value]="item.value">{{item.name}}</option>
-    </select> 
+    </select>
   </app-field>
 
   <!-- Incorporation/ BC Registration Number Box-->
@@ -381,22 +381,23 @@
 
     </div>
    </section>
-  <!-- 2024-09-13: Temporary disabling this until further development work can be completed to support this feature.-->
-  <!-- <section class="submit-container" style="background-color: #F2F2F2; border: none; color: #000;">
-    <h2 style="color: #000">Online Retailer Verification:</h2>
-    <div class="submit-content">
-      <p>To obtain the Online Retailer Verification button to place on your Website(s), 
-        please select the "Generate ORV Code" button below.  Once you have the code, 
-        you will need to add it to your Website(s).  
-        Consult your development team to add the code to your Website(s).
-      </p>
-    </div>
-    <div style="display: flex; justify-content: center;">
-      <button class="btn btn-primary" color="primary" (click)="openBadgeTemplateDialog()" [disabled]="accountUrls?.controls?.length > 1 || accountUrls?.controls[0].value" [attr.title]="(accountUrls?.controls?.length > 1 || accountUrls?.controls[0].value)? 'Can not generate ORV Code if account has URL(s)': null">
+  <ng-container *ngIf="ORVEnabled">
+    <section class="submit-container" style="background-color: #F2F2F2; border: none; color: #000;">
+      <h2 style="color: #000">Online Retailer Verification:</h2>
+      <div class="submit-content">
+        <p>To obtain the Online Retailer Verification button to place on your Website(s),
+          please select the "Generate ORV Code" button below.  Once you have the code,
+          you will need to add it to your Website(s).
+          Consult your development team to add the code to your Website(s).
+        </p>
+      </div>
+      <div style="display: flex; justify-content: center;">
+        <button class="btn btn-primary" color="primary" (click)="openBadgeTemplateDialog()" [disabled]="!isORVEnabled()" [attr.title]="!isORVEnabled() ? 'Can not generate ORV Code if account has URL(s)': null">
           <span class="compact-button">Generate ORV Code</span>
-      </button>
-    </div>
-  </section> -->
+        </button>
+      </div>
+    </section>
+  </ng-container>
   <section class="submit-container" style="background-color: #F2F2F2; border: none; color: #000;">
     <h2 style="color: #000">Collection Notice:</h2>
     <div class="submit-content">
@@ -410,12 +411,11 @@
 </div>
 
 <!-- Modal HTML -->
-<!-- 2024-09-13: Temporary disabling this until further development work can be completed to support this feature. -->
-<!-- <ng-template #badgeTemplateDialog>
+<ng-template #badgeTemplateDialog *ngIf="ORVEnabled">
   <h2 mat-dialog-title class="centered-title">Generate ORV Code</h2>
   <p>Paste this code into your website to create your Online Retailer Verification button:</p>
   <pre><code>{{generatedOrvCode}}</code></pre>
   <div mat-dialog-actions class="center-actions">
     <button mat-raised-button color="primary" (click)="onCopy()">Copy</button>
   </div>
-</ng-template> -->
+</ng-template>
