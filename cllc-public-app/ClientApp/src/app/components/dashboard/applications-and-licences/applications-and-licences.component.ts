@@ -787,7 +787,7 @@ export class ApplicationsAndLicencesComponent extends FormBase implements OnInit
   }
 
   /**
-   * Checks if the application summary is for a permanent change to a license application.
+   * Checks if the application summary is for a Permanent Change to a Licensee application.
    *
    * @param {ApplicationSummary} ApplicationSummary
    * @return {*}  {boolean}
@@ -797,10 +797,11 @@ export class ApplicationsAndLicencesComponent extends FormBase implements OnInit
   }
 
   /**
-   * Checks if the application summary is for a permanent change to a license as a result of a legal entity review.
+   * Checks if the application summary is for a Permanent Change to a Licensee as a result of a Legal Entity Review.
    *
-   * Note: This is a regular Permanent Change to a Licensee application that has been created as a result of a
-   * legal entity review, and has a binding to the corresponding legal entity review application.
+   * Note: This is a regular Permanent Change to a Licensee application, but one which has been created as a result of a
+   * legal entity review, and has a binding to the corresponding legal entity review application. This variation of the
+   * PCL application is presented to the user on a different page, which different fields and workflow.
    *
    * @param {ApplicationSummary} ApplicationSummary
    * @return {*}  {boolean}
@@ -814,7 +815,7 @@ export class ApplicationsAndLicencesComponent extends FormBase implements OnInit
   }
 
   /**
-   * Checks if the application summary is for a legal entity review application.
+   * Checks if the application summary is for a Legal Entity Review application.
    *
    * @param {ApplicationSummary} ApplicationSummary
    * @return {*}  {boolean}
@@ -824,7 +825,7 @@ export class ApplicationsAndLicencesComponent extends FormBase implements OnInit
   }
 
   /**
-   * Checks if the application summary is for any other application.
+   * Checks if the application summary is for any other application (other than the ones with specific checks above).
    *
    * @param {ApplicationSummary} ApplicationSummary
    * @return {*}  {boolean}
