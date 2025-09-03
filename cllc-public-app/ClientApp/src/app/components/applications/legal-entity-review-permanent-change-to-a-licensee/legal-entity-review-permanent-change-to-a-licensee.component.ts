@@ -252,20 +252,27 @@ export class LegalEntityReviewPermanentChangeToALicenseeComponent extends FormBa
     const showProgress = !this.application.applicationType.isFree;
     const applicationDataOverrides = { invoiceTrigger: invoiceTrigger };
 
-    this.save(showProgress, applicationDataOverrides)
-      .pipe(takeWhile(() => this.componentActive))
-      .subscribe({
-        next: ([saveSucceeded, app]) => {
+    const applicationData = this._getApplicationData(applicationDataOverrides);
+    const applicationDataWithBusinessRules = this._getApplicationDataWithBusinessRules(applicationData);
+
+    this.save(applicationDataWithBusinessRules, showProgress)
+      .pipe(
+        takeWhile(() => this.componentActive),
+        mergeMap(([saveSucceeded, app]) => {
           if (saveSucceeded && app) {
-            this.submitPayment(invoiceType).subscribe({
-              next: () => {
+            return this.submitPayment(invoiceType).pipe(
+              mergeMap(() => {
+                // Reset progress flags
                 if (invoiceType === 'primary') {
                   this.primaryPaymentInProgress = false;
                 } else {
                   this.secondaryPaymentInProgress = false;
                 }
-              },
-              error: (error) => {
+
+                // Save the final application data without business rule modifications
+                return this.save(applicationData);
+              }),
+              catchError((error) => {
                 console.error('Error submitting payment', error);
                 this.matDialog.open(GenericMessageDialogComponent, {
                   data: {
@@ -275,8 +282,9 @@ export class LegalEntityReviewPermanentChangeToALicenseeComponent extends FormBa
                     closeButtonText: 'Close'
                   }
                 });
-              }
-            });
+                return EMPTY;
+              })
+            );
           } else if (this.application.applicationType.isFree) {
             // show error message the save failed and the application is free
             this.snackBar.open('Error saving Application', 'Fail', { duration: 3500, panelClass: ['red-snackbar'] });
@@ -285,9 +293,12 @@ export class LegalEntityReviewPermanentChangeToALicenseeComponent extends FormBa
             } else {
               this.secondaryPaymentInProgress = false;
             }
+            return EMPTY;
+          } else {
+            return EMPTY;
           }
-        },
-        error: (error) => {
+        }),
+        catchError((error) => {
           console.error('Error saving form data', error);
           this.matDialog.open(GenericMessageDialogComponent, {
             data: {
@@ -296,6 +307,17 @@ export class LegalEntityReviewPermanentChangeToALicenseeComponent extends FormBa
               closeButtonText: 'Close'
             }
           });
+          return EMPTY;
+        })
+      )
+      .subscribe({
+        next: (result) => {
+          // Final result handling if needed
+          console.log('Operation completed successfully', result);
+        },
+        error: (error) => {
+          // This should rarely be hit due to catchError operators above
+          console.error('Unexpected error', error);
         }
       });
   }
@@ -319,22 +341,14 @@ export class LegalEntityReviewPermanentChangeToALicenseeComponent extends FormBa
   /**
    * Saves the application data.
    *
-   * Merges the initial application data with the form data values and any additional data provided.
-   *
    * @private
+   * @param {Application} applicationData
    * @param {boolean} [showProgress=false]
-   * @param {Partial<Application>} applicationData Additional application data to save, which will override any matching
-   * values from the initial application data OR from the form data.
    * @return {*}  {Observable<[boolean, Application]>}
    */
-  private save(
-    showProgress: boolean = false,
-    applicationDataOverrides: Partial<Application> = {}
-  ): Observable<[boolean, Application]> {
-    const applicationDataForSave = this._getApplicationDataForSave(applicationDataOverrides);
-
+  private save(applicationData: Application, showProgress: boolean = false): Observable<[boolean, Application]> {
     return this.applicationDataService
-      .updateApplication(applicationDataForSave)
+      .updateApplication(applicationData)
       .pipe(takeWhile(() => this.componentActive))
       .pipe(
         catchError(() => {
@@ -362,16 +376,30 @@ export class LegalEntityReviewPermanentChangeToALicenseeComponent extends FormBa
   }
 
   /**
-   * Prepares the application data for saving.
+   * Get the application data.
    *
    * @private
    * @param {Partial<Application>} [applicationDataOverrides={}] Optional data that will override any existing
    * application data.
    * @return {*}  {Application}
    */
-  private _getApplicationDataForSave(applicationDataOverrides: Partial<Application> = {}): Application {
-    let formData = this.form.value;
+  private _getApplicationData(applicationDataOverrides: Partial<Application> = {}): Application {
+    return {
+      ...this.application,
+      ...this.form.value,
+      ...applicationDataOverrides
+    };
+  }
 
+  /**
+   * Modify the provided application data, applying business rules.
+   *
+   * @private
+   * @param {Application} applicationData
+   * @return {*}  {Application}
+   */
+  private _getApplicationDataWithBusinessRules(applicationData: Application): Application {
+    const applicationDataWithBusinessRules = { ...applicationData };
     /*
      * Business Rule:
      * Tied House Declaration changes, like all changes, normally cost the user a fee. However, if the user is
@@ -381,18 +409,14 @@ export class LegalEntityReviewPermanentChangeToALicenseeComponent extends FormBa
      * `false`. These booleans control which types of changes dynamics generates invoices for.
      */
     if (
-      formData.csInternalTransferOfShares === true ||
-      formData.csExternalTransferOfShares === true ||
-      formData.csChangeOfDirectorsOrOfficers === true
+      applicationDataWithBusinessRules.csInternalTransferOfShares === true ||
+      applicationDataWithBusinessRules.csExternalTransferOfShares === true ||
+      applicationDataWithBusinessRules.csChangeOfDirectorsOrOfficers === true
     ) {
-      formData.csTiedHouseDeclaration = false;
+      applicationDataWithBusinessRules.csTiedHouseDeclaration = false;
     }
 
-    return {
-      ...this.application,
-      ...formData,
-      ...applicationDataOverrides
-    };
+    return applicationDataWithBusinessRules;
   }
 
   /**
