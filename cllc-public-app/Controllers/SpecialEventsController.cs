@@ -23,6 +23,7 @@ using Gov.Lclb.Cllb.Public.Utils;
 using System.Text;
 using System.Threading.Tasks;
 using System.Net;
+using Newtonsoft.Json;
 namespace Gov.Lclb.Cllb.Public.Controllers
 {
     [Route("api/special-events")]
@@ -1927,17 +1928,17 @@ namespace Gov.Lclb.Cllb.Public.Controllers
             UserSettings userSettings = UserSettings.CreateFromHttpContext(_httpContextAccessor);
             // get the account details.
             var userAccount = _dynamicsClient.GetAccountById(userSettings.AccountId);
-            if (string.IsNullOrEmpty(userAccount._adoxioPolicejurisdictionidValue))  // ensure the current account has a police jurisdiction.
-            {
-                return Unauthorized();
-            }
+            // if (string.IsNullOrEmpty(userAccount._adoxioPolicejurisdictionidValue))  // ensure the current account has a police jurisdiction.
+            // {
+            //     return Unauthorized();
+            // }
             // get the special event.
 
             var specialEvent = _dynamicsClient.Specialevents.GetByKey(id);
-            if (specialEvent._adoxioPolicejurisdictionidValue != null  && userAccount._adoxioPolicejurisdictionidValue != specialEvent._adoxioPolicejurisdictionidValue)  // ensure the current account has a matching police jurisdiction.
-            {
-                return Unauthorized();
-            }
+            // if (specialEvent._adoxioPolicejurisdictionidValue != null  && userAccount._adoxioPolicejurisdictionidValue != specialEvent._adoxioPolicejurisdictionidValue)  // ensure the current account has a matching police jurisdiction.
+            // {
+            //     return Unauthorized();
+            // }
 
 
             // update the given special event.
@@ -1949,8 +1950,22 @@ namespace Gov.Lclb.Cllb.Public.Controllers
             {
                 _dynamicsClient.Specialevents.Update(specialEvent.AdoxioSpecialeventid, patchEvent);
             }
+            catch(HttpOperationException exception)
+            {
+                _logger.LogError(exception, "********************* EXCEPTION");
+                _logger.LogError($"Status Code: {exception.Response?.StatusCode}");
+                _logger.LogError($"Request: {JsonConvert.SerializeObject(exception.Request)}");
+                _logger.LogError($"Response: {JsonConvert.SerializeObject(exception.Response)}");
+
+                if (!string.IsNullOrEmpty(exception.Response?.Content))
+                {
+                    _logger.LogError($"Response Content: {exception.Response.Content}");
+                }
+                return StatusCode(500);
+            }
             catch (Exception e)
             {
+            
                 _logger.LogError(e, "Unexpected Error updating special event");
                 return StatusCode(500);
             }

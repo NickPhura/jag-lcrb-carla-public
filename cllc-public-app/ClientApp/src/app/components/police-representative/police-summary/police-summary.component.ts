@@ -76,7 +76,7 @@ export class PoliceSummaryComponent extends FormBase implements OnInit {
   busy: Subscription;
   specialEventId: string;
   contact: Contact;
-  sepApplication: SepApplication;
+  sepApplication: any;
   form: FormGroup = this.fb.group({
     sepCity: [""],
     termsAndConditions: this.fb.array([

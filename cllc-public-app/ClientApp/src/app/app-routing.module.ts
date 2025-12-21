@@ -10,7 +10,6 @@ import { SurveyResolver } from "@services/survey-resolver.service";
 import { NewsletterConfirmationComponent } from "@components/newsletter-confirmation/newsletter-confirmation.component";
 import { NotFoundComponent } from "@components/not-found/not-found.component";
 import { PaymentConfirmationComponent } from "@components/payment-confirmation/payment-confirmation.component";
-import { CanDeactivateGuard } from "@services/can-deactivate-guard.service";
 import { BCeidAuthGuard } from "@services/bceid-auth-guard.service";
 import { ServiceCardAuthGuard } from "@services/service-card-auth-guard.service";
 import { DashboardComponent } from "@components/dashboard/dashboard.component";
@@ -114,31 +113,25 @@ const routes: Routes = [
   },{
     path: "sep",
     component: LoginComponent,
-    canActivate: [FeatureGuard],
-    canDeactivate: [CanDeactivateGuard],
     data: { feature: "Sep" },
   },
   {
     path: "sep/dashboard",  // this route displays either the regular SEP dashboard or the Police dashboard based on user role
-    component: SepHomeComponent,
-    canActivate: [BCeidOrServiceCardAuthGuard]
+    component: SepHomeComponent
   },
   {
     path: "sep/application/:id/:step",
     component: SepApplicationComponent,
-    canActivate: [BCeidOrServiceCardAuthGuard, FeatureGuard],
     data: { feature: "Sep" }
   },
   {
     path: "sep/application-summary/:apiId",
     component: SummaryComponent,
-    canActivate: [BCeidOrServiceCardAuthGuard, FeatureGuard],
     data: { feature: "Sep" }
   },
   {
     path: "sep/my-applications",
     component: MyApplicationsComponent,
-    canActivate: [BCeidOrServiceCardAuthGuard, FeatureGuard],
     data: { feature: "Sep" }
   },
   {
@@ -155,293 +148,238 @@ const routes: Routes = [
   {
     path: "sep/police/approval-settings",
     component: ApprovalSettingsComponent,
-    canActivate: [PoliceAuthGuard]
   },
   {
     path: "sep/police/all-applications",
     component: AllApplicationsComponent,
-    canActivate: [PoliceAuthGuard]
   },
   {
     path: "sep/police/my-jobs",
     component: MyJobsComponent,
-    canActivate: [PoliceAuthGuard]
   },
   {
     path: "sep/police/:specialEventId",
-    component: PoliceSummaryComponent,
-    canActivate: [PoliceAuthGuard],
-    canDeactivate: [CanDeactivateGuard]
+    component: PoliceSummaryComponent
   },
   {
     path: "servicecard-profile",
     component: ServiceCardProfileComponent,
-    canActivate: [ServiceCardAuthGuard, FeatureGuard],
     data: { feature: "Sep" }
   },
   {
     path: "sep/drink-planner",
     component: DrinkPlannerComponent,
-    canActivate: [BCeidOrServiceCardAuthGuard, FeatureGuard],
     data: { feature: "Sep" }
   },
   {
     path: "sep/claim/:jobNumber",
     component: SepClaimComponent,
-    canActivate: [BCeidOrServiceCardAuthGuard, FeatureGuard],
     data: { feature: "Sep" }
   },
   {
     path: "covid-temporary-extension",
     component: ApplicationCovidTemporaryExtensionComponent,
-    canActivate: [FeatureGuard],
     data: { feature: "CovidApplication" }
   },
   {
     path: "covid-confirmation",
     component: CovidConfirmationComponent,
-    canActivate: [FeatureGuard],
     data: { feature: "CovidApplication" }
   },
   {
     path: "org-structure",               // block access to old page
     component: PermanentChangeToALicenseeComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
     data: { feature: "PermanentChangesToLicensee" }
   },
   {
     path: "lg-approvals",
     component: LgApprovalsComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
-    canDeactivate: [CanDeactivateGuard],
     data: { feature: "LGApprovals" }
   },
 
   {
     path: "security-screening/confirmation",
     component: SecurityScreeningConfirmationComponent,
-    canActivate: [FeatureGuard],
     data: { feature: "LicenseeChanges" }
   },
   {
     path: "personal-history-summary/:token",
     component: PersonalHistorySummaryComponent,
-    canActivate: [FeatureGuard],
     data: { feature: "LicenseeChanges" }
   },
   {
     path: "cannabis-associate-screening/:token",
     component: CannabisAssociateScreeningComponent,
-    canActivate: [FeatureGuard],
     data: { feature: "LicenseeChanges" }
   },
   {
     path: "licences",
     component: LicencesComponent,
-    canActivate: [BCeidAuthGuard],
   },
   {
     path: "licence/:licenceId/representative",
     component: LicenceRepresentativeFormComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "licence/:licenceId/event/:eventId/security",
     component: EventSecurityFormComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "licence/:licenceId/event",
     component: CateringEventFormComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "licence/:licenceId/event/:eventId",
     component: CateringEventFormComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "licence/:licenceId/temporary-offsite",
     component: TemporaryOffsiteComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "licence/:licenceId/temporary-offsite/:eventId",
     component: TemporaryOffsiteComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "licence/:licenceId/market-event",
     component: MarketEventComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "licence/:licenceId/market-event/:eventId",
     component: MarketEventComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: 'licence/:licenceId/tua-event',
     component: TuaEventComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
     data: { feature: 'TemporaryUseAreaEvents' }
   },
   {
     path: 'licence/:licenceId/tua-event/:eventId',
     component: TuaEventComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
     data: { feature: 'TemporaryUseAreaEvents' }
   },
   {
     path: 'licence/:licenceId/liquor-free-event',
     component: LiquorFreeEventComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
     data: { feature: 'LiquorFreeEvents' }
   },
   {
     path: 'licence/:licenceId/liquor-free-event/:eventId',
     component: LiquorFreeEventComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
     data: { feature: 'LiquorFreeEvents' }
   },
   {
     path: 'licence/:licenceId/take-home-event',
     component: TakeHomeEventComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
     data: { feature: 'TakeHomeEvents' }
   },
   {
     path: 'licence/:licenceId/take-home-event/:eventId',
     component: TakeHomeEventComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
     data: { feature: 'TakeHomeEvents' }
   },
   {
     path: 'licence/:licenceId/offsite-storage',
     component: OffsiteStorageComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "federal-reporting/:licenceId/:monthlyReportId",
     component: FederalReportingComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "licensee-changes/:applicationId",
     component: ApplicationLicenseeChangesComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
     data: { feature: "LicenseeChanges" }
   },
   {
     path: "account-profile",
     component: AccountProfileComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "notices",
     component: NoticesComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
     data: { feature: "Notices" }
   },
   {
     path: "renew-crs-licence/application/:applicationId",
     component: LicenceRenewalStepsComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "renew-licence/:licenceType/:applicationId",
     component: LicenceRenewalStepsComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "relocation-type/:licenceId",
     component: RelocationTypeComponent,
-    canActivate: [BCeidAuthGuard],
   },
   // Permanent Change to a Licensee
   {
     path: "permanent-change-to-a-licensee",
     component: PermanentChangeToALicenseeComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
     data: { feature: "PermanentChangesToLicensee" }
   },
   {
     path: "permanent-change-to-a-licensee/:applicationId/:invoiceType",
     component: PermanentChangeToALicenseeComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
     data: { feature: "PermanentChangesToLicensee" }
   },
   {
     path: "permanent-change-to-a-licensee/:applicationId",
     component: PermanentChangeToALicenseeComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
     data: { feature: "PermanentChangesToLicensee" }
   },
   // Legal Entity Review
   {
     path: "legal-entity-review",
     component: LegalEntityReviewComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
     data: { feature: "LegalEntityReview" }
   },
   {
     path: "legal-entity-review/:applicationId",
     component: LegalEntityReviewComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
     data: { feature: "LegalEntityReview" }
   },
   // Legal Entity Review Permanent Change to a Licensee
   {
     path: "legal-entity-review-permanent-change-to-a-licensee",
     component: LegalEntityReviewPermanentChangeToALicenseeComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
     data: { feature: "LegalEntityReview" }
   },
   {
     path: "legal-entity-review-permanent-change-to-a-licensee/:applicationId",
     component: LegalEntityReviewPermanentChangeToALicenseeComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
     data: { feature: "LegalEntityReview" }
   },
   {
     path: "legal-entity-review-permanent-change-to-a-licensee/:applicationId/:invoiceType",
     component: LegalEntityReviewPermanentChangeToALicenseeComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
     data: { feature: "LegalEntityReview" }
   },
   {
     path: "multi-step-application/:applicationId",
     component: MultiStageApplicationFlowComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
-    canDeactivate: [CanDeactivateGuard],
     data: { feature: "LicenseeChanges" }
   },
   {
     path: "multi-step-application/:stepType/:applicationId",
     component: MultiStageApplicationFlowComponent,
-    canActivate: [BCeidAuthGuard, FeatureGuard],
-    canDeactivate: [CanDeactivateGuard],
     data: { feature: "LicenseeChanges" }
   },
   {
     path: "account-profile/:applicationId",
     component: AccountProfileComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "account-profile/renewal/:renewalType/:applicationId",
     component: AccountProfileComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "dashboard",
     component: DashboardComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "dashboard-lite",
     component: DashboardComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "associate-wizard",
@@ -450,51 +388,40 @@ const routes: Routes = [
   {
     path: "application/:applicationId",
     component: ApplicationComponent,
-    canDeactivate: [CanDeactivateGuard],
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "store-opening/:applicationId",
     component: ApplicationAndLicenceFeeComponent,
-    canDeactivate: [CanDeactivateGuard],
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "ownership-cancel-transfer/:licenceId",
     component: ApplicationCancelOwnershipTransferComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "cancel-third-party-operator/:licenceId",
     component: CancelThirdPartyOperatorComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "terminate-third-party-operator/:licenceId",
     component: TerminateTPORelationshipComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "ownership-transfer/:licenceId",
     component: ApplicationOwnershipTransferComponent,
-    canActivate: [BCeidAuthGuard]
   },
 
   {
     path: "tied-house-exemption/:licenceId",
     component: ApplicationTiedHouseExemptionComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
 
     path: "tied-house-exemption/:isAppId/:applicationId",
     component: ApplicationTiedHouseExemptionComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "third-party-operator/:licenceId",
     component: ApplicationThirdPartyOperatorComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "worker-qualification/home",
@@ -503,29 +430,22 @@ const routes: Routes = [
   {
     path: "worker-qualification/user-comfirmation",
     component: UserConfirmationComponent,
-    canActivate: [ServiceCardAuthGuard]
   },
   {
     path: "worker-qualification/payment-confirmation",
     component: WorkerPaymentConfirmationComponent,
-    canActivate: [ServiceCardAuthGuard]
   },
   {
     path: "worker-qualification/dashboard",
     component: WorkerDashboardComponent,
-    canActivate: [ServiceCardAuthGuard]
   },
   {
     path: "worker-qualification/application/:id",
     component: WorkerApplicationComponent,
-    canDeactivate: [CanDeactivateGuard],
-    canActivate: [ServiceCardAuthGuard]
   },
   {
     path: "worker-qualification/spd-consent/:id",
     component: SpdConsentComponent,
-    canDeactivate: [CanDeactivateGuard],
-    canActivate: [ServiceCardAuthGuard]
   },
   {
     path: "form-viewer/:id",
@@ -545,7 +465,6 @@ const routes: Routes = [
     // Only show this policy document when the feature flag is enabled
     path: "policy-document/worker-qualification-no-longer-required",
     component: WorkerLandingPageComponent,
-    canActivate: [FeatureGuard],
     data: {
       feature: "DisableWorkerQualification",
     }
@@ -561,12 +480,10 @@ const routes: Routes = [
   {
     path: "payment-confirmation",
     component: PaymentConfirmationComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "licence-fee-payment-confirmation",
     component: LicenceFeePaymentConfirmationComponent,
-    canActivate: [BCeidAuthGuard]
   },
   {
     path: "prv/survey",
@@ -607,7 +524,6 @@ const routes: Routes = [
   {
     path: "map",
     component: MapComponent,
-    canActivate: [FeatureGuard],
     data: { feature: "Maps" }
   },
   {

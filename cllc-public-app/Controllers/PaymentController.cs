@@ -336,20 +336,23 @@ namespace Gov.Lclb.Cllb.Public.Controllers
         [HttpGet("submit/licence-fee/{id}")]
         public async Task<IActionResult> GetLicencePaymentUrl(string id)
         {
-            _logger.Debug($"Called GetLicencePaymentUrl({id})");
+            Console.WriteLine($"Called GetLicencePaymentUrl({id})");
 
             // get the application and confirm access (call parse to ensure we are getting a valid id)
             MicrosoftDynamicsCRMadoxioApplication application = await GetDynamicsApplication(id);
 
             if (application == null)
             {
+                Console.WriteLine("111111");
                 return NotFound("Application not found");
             }
 
             if (application.AdoxioLicenceFeeInvoice?.Statuscode == (int?)Adoxio_invoicestatuses.Paid)
             {
+                Console.WriteLine("2222");
                 if (application.AdoxioLicencefeeinvoicepaid == false)
                 {
+                    Console.WriteLine("3333");
                     try
                     {
                         MicrosoftDynamicsCRMadoxioApplication fixApplication = new MicrosoftDynamicsCRMadoxioApplication
@@ -360,32 +363,38 @@ namespace Gov.Lclb.Cllb.Public.Controllers
                     }
                     catch (HttpOperationException httpOperationException)
                     {
-                        _logger.Error(httpOperationException, "Error updating application");
+                        Console.WriteLine("4444");
+                        Console.WriteLine($"{httpOperationException}: Error updating application");
                         // fail 
                         throw;
                     }
                 }
-                return NotFound("Payment already made");
+                Console.WriteLine("5555");
+                return NotFound("Payment already made A");
             }
             else
             {
+                Console.WriteLine("6666");
                 //TODO Reverify Payment Status with BCEP
                 if (application._adoxioLicencefeeinvoiceValue != null)
                 {
+                    Console.WriteLine("7777");
                     bool invoicePaid = await ReVerifyLicenceFeePaymentStatus(id);
                     if (invoicePaid)
                     {
-                        return NotFound("Payment already made");
+                        Console.WriteLine("8888");
+                        return NotFound("Payment already made B");
                     }
                 }
             }
 
             if (!string.IsNullOrEmpty(application._adoxioLicencefeeinvoiceValue))
             {
-
+                Console.WriteLine("9999");
                 MicrosoftDynamicsCRMinvoice invoice2 = await _dynamicsClient.GetInvoiceById(Guid.Parse(application._adoxioLicencefeeinvoiceValue));
                 if (invoice2 != null && invoice2.Statecode == (int)Adoxio_invoicestates.Cancelled)
                 {
+                    Console.WriteLine("10 10 10 10");
                     // set the application invoice trigger to create an invoice                    
                     MicrosoftDynamicsCRMadoxioApplication adoxioApplication2 = new MicrosoftDynamicsCRMadoxioApplication
                     {
@@ -395,11 +404,12 @@ namespace Gov.Lclb.Cllb.Public.Controllers
 
                     try
                     {
+                        Console.WriteLine("11 11 11 11");
                         _dynamicsClient.Applications.Update(id, adoxioApplication2);
                     }
                     catch (HttpOperationException httpOperationException)
                     {
-                        _logger.Error(httpOperationException, "Error updating application");
+                        Console.WriteLine($"{httpOperationException}: Error updating application");
                         // fail 
                         throw;
                     }
@@ -407,27 +417,31 @@ namespace Gov.Lclb.Cllb.Public.Controllers
                 }
             }
 
+Console.WriteLine("12 12 12 12");
             string invoiceId = application._adoxioLicencefeeinvoiceValue;
 
             int retries = 0;
             while (retries < 10 && string.IsNullOrEmpty(invoiceId))
             {
+                Console.WriteLine("13 13 13 13");
                 // should happen immediately, but ...
                 // pause and try again - in case Dynamics is slow ...
                 retries++;
-                _logger.Debug("No invoice found, retry = " + retries);
+                Console.WriteLine("No invoice found, retry = " + retries);
                 System.Threading.Thread.Sleep(1000);
                 application = await GetDynamicsApplication(id);
                 invoiceId = application._adoxioLicencefeeinvoiceValue;
             }
 
+Console.WriteLine("14 14 14 14");
             if (string.IsNullOrEmpty(invoiceId))
             {
-                _logger.Error($"No invoice found for application {id}");
+                Console.WriteLine("15 15 15 15");
+                Console.WriteLine($"No invoice found for application {id}");
                 return NotFound();
             }
 
-            _logger.Debug("Created invoice for application = " + invoiceId);
+            Console.WriteLine("Created invoice for application = " + invoiceId);
 
             /*
                 * When the applicant submits their Application, we will set the application "Application Invoice Trigger" to "Y" - this will trigger a workflow that will create the Invoice
@@ -441,22 +455,26 @@ namespace Gov.Lclb.Cllb.Public.Controllers
                 *  - We will deal with the history later (i.e. there can be multiple "Cancelled" Invoices - we need to keep them for reconciliation but we don't need them for MVP
                 */
 
+Console.WriteLine("16 16 16 16");
             MicrosoftDynamicsCRMinvoice invoice = await _dynamicsClient.GetInvoiceById(Guid.Parse(invoiceId));
             // dynamics creates a unique transaction id per invoice, used as the "order number" for payment
             var ordernum = invoice.AdoxioTransactionid;
             // dynamics determines the amount based on the licence type of the application
             var orderamt = invoice.Totalamount;
 
+Console.WriteLine("17 17 17 17");
             PaymentType paymentType = application.GetPaymentType(_dynamicsClient); // set to true for Liquor.
 
             Dictionary<string, string> redirectUrl;
             redirectUrl = new Dictionary<string, string>();
 
+Console.WriteLine("18 18 18 18");
             var redirectPath = _configuration["BASE_URI"] + _configuration["BASE_PATH"] + "/licence-fee-payment-confirmation";
             redirectUrl["url"] = _bcep.GeneratePaymentRedirectUrl(ordernum, id, String.Format("{0:0.00}", orderamt), paymentType, redirectPath);
 
-            _logger.Debug($"Payment redirect url = {redirectUrl["url"]}");
+            Console.WriteLine($"Payment redirect url = {redirectUrl["url"]}");
 
+Console.WriteLine("19 19 19 19");
             return new JsonResult(redirectUrl);
         }
 
@@ -1105,7 +1123,7 @@ namespace Gov.Lclb.Cllb.Public.Controllers
 
             // load the invoice for this application
             string invoiceId = application._adoxioLicencefeeinvoiceValue;
-            _logger.Debug("Found invoice for application = " + invoiceId);
+            Console.WriteLine("Found invoice for application = " + invoiceId);
             MicrosoftDynamicsCRMinvoice invoice = await _dynamicsClient.GetInvoiceById(Guid.Parse(invoiceId));
             var ordernum = invoice.AdoxioTransactionid;
             var orderamt = invoice.Totalamount;
@@ -1116,6 +1134,7 @@ namespace Gov.Lclb.Cllb.Public.Controllers
 
             if (response.ContainsKey("error"))
             {
+                Console.WriteLine("AAAA");
                 // handle error.
                 _logger.Error($"PAYMENT Re-VERIFICATION ERROR - {response["message"]} for application {id}");
                 return false; // client will retry.
@@ -1125,6 +1144,7 @@ namespace Gov.Lclb.Cllb.Public.Controllers
             var messageText = response["messageText"];
             if (messageId == "559" || messageId == "761")
             {
+                Console.WriteLine("BBBB");
                 //Payment Processor has no record of this transaction do nothing
                 return false;
             }
@@ -1133,7 +1153,7 @@ namespace Gov.Lclb.Cllb.Public.Controllers
 
             foreach (var key in response.Keys)
             {
-                _logger.Debug(">>>>>" + key + ":" + response[key]);
+                Console.WriteLine(">>>>>" + key + ":" + response[key]);
             }
 
             /* 
@@ -1144,14 +1164,14 @@ namespace Gov.Lclb.Cllb.Public.Controllers
 
             if (invoice.Statecode == (int?)Adoxio_invoicestates.New || invoice.Statecode == null)
             {
-                _logger.Debug("Processing invoice with status New");
+                Console.WriteLine("Processing invoice with status New");
 
 
                 // if payment was successful:
                 var pay_status = response["trnApproved"];
                 if (pay_status == "1")
                 {
-                    _logger.Debug("Transaction approved");
+                    Console.WriteLine("Transaction approved");
 
                     MicrosoftDynamicsCRMinvoice patchInvoice = new MicrosoftDynamicsCRMinvoice
                     {
@@ -1166,7 +1186,7 @@ namespace Gov.Lclb.Cllb.Public.Controllers
                     }
                     catch (HttpOperationException httpOperationException)
                     {
-                        _logger.Error(httpOperationException, "Error updating invoice");
+                        Console.WriteLine($"{httpOperationException}: Error updating invoice");
                         // fail 
                         throw (httpOperationException);
                     }
@@ -1182,7 +1202,7 @@ namespace Gov.Lclb.Cllb.Public.Controllers
                     }
                     catch (HttpOperationException httpOperationException)
                     {
-                        _logger.Error(httpOperationException, "Error updating application");
+                        Console.WriteLine($"{httpOperationException}: Error updating application");
                         // fail 
                         throw (httpOperationException);
                     }
@@ -1193,13 +1213,13 @@ namespace Gov.Lclb.Cllb.Public.Controllers
                         await _geocoderClient.GeocodeEstablishment(application._adoxioLicenceestablishmentValue, _logger);
                     }
 
-                    _logger.Information($"Licence Fee Transaction approved.  Application ID: {id} Invoice: {invoice.Invoicenumber} Liquor: {paymentType}");
+                    Console.WriteLine($"Licence Fee Transaction approved.  Application ID: {id} Invoice: {invoice.Invoicenumber} Liquor: {paymentType}");
                     return true;
                 }
                 // if payment failed:
                 else
                 {
-                    _logger.Debug("Transaction NOT approved");
+                    Console.WriteLine("Transaction NOT approved");
 
                     MicrosoftDynamicsCRMinvoice patchInvoice = new MicrosoftDynamicsCRMinvoice
                     {
@@ -1213,7 +1233,7 @@ namespace Gov.Lclb.Cllb.Public.Controllers
                     }
                     catch (HttpOperationException httpOperationException)
                     {
-                        _logger.Error(httpOperationException, "Error updating invoice");
+                        Console.WriteLine($"{httpOperationException}: Error updating invoice");
 
                         // fail 
                         throw (httpOperationException);
@@ -1231,11 +1251,11 @@ namespace Gov.Lclb.Cllb.Public.Controllers
                     }
                     catch (HttpOperationException httpOperationException)
                     {
-                        _logger.Error(httpOperationException, "Error updating application");
+                        Console.WriteLine($"{httpOperationException}: Error updating application");
                         // fail 
                         throw (httpOperationException);
                     }
-                    _logger.Information($"Licence Fee Transaction NOT approved.  Application ID: {id} Invoice: {invoice.Invoicenumber} Liquor: {paymentType}");
+                    Console.WriteLine($"Licence Fee Transaction NOT approved.  Application ID: {id} Invoice: {invoice.Invoicenumber} Liquor: {paymentType}");
                     return false;
                 }
             }

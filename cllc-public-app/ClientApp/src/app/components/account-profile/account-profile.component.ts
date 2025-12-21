@@ -63,6 +63,7 @@ const ValidationFieldNameMap = {
   'businessProfile.businessNumber': 'Business Number',
   'businessProfile.businessType': 'Business Type',
   'businessProfile.contactPhone': 'Corporation Address Business Phone',
+  'businessProfile.contactEmail': 'Corporation Address Business Email',
   'businessProfile.accountUrls': 'Account URL(s)',
 
   'businessProfile.physicalAddressStreet': 'Physical Address Street',

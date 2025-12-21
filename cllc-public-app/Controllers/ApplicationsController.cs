@@ -82,6 +82,7 @@ namespace Gov.Lclb.Cllb.Public.Controllers
                 // loop through them
                 foreach (var dynamicsApplication in dynamicsApplicationList)
                 {
+                    Console.WriteLine("aaaaaaaaaaaaaaaaaaaaaaaaa");
                     // if the application is not a renewal and it's for an expired licence, then we don't allow them to continue it
                     // they must renew their licence first.
                     if (dynamicsApplication.AdoxioApplicationTypeId?.AdoxioIsrenewal != true &&
@@ -89,6 +90,7 @@ namespace Gov.Lclb.Cllb.Public.Controllers
                     {
                         continue;
                     }
+                    Console.WriteLine($"dynamicsApplication: {JsonConvert.SerializeObject(dynamicsApplication)}");
                     // create a list to collect possible endorsement applications
                     var endorsements = new List<string>();
                     // if the application is for a licence  or if its a relocation app
@@ -98,18 +100,24 @@ namespace Gov.Lclb.Cllb.Public.Controllers
                          dynamicsApplication?.AdoxioApplicationTypeId?.AdoxioIsrelocation == true) && // Application for a licence
                         dynamicsApplication.AdoxioPaymentrecieved == true)
                     {
+                        Console.WriteLine("0000000000000000000000000");
                         // do a reverse lookup on the licence type
                         var expand = new List<string> { "adoxio_licencetypes_applicationtypes" };
                         var licenceType =
                             _dynamicsClient.Licencetypes.GetByKey(dynamicsApplication._adoxioLicencetypeValue,
                                 expand: expand);
+
+                        Console.WriteLine("111111111111111111111111111");
+                        Console.WriteLine($"licenceType: {JsonConvert.SerializeObject(licenceType)}");
                         // to get which endorsement applications link to it
                         if (licenceType?.AdoxioLicencetypesApplicationtypes != null)
                         {
+                            Console.WriteLine("2222222222222222222222222");
                             endorsements = licenceType.AdoxioLicencetypesApplicationtypes
                                 .Where(type => (type.AdoxioIsendorsement == true || type.AdoxioCopylicencetc == true))
                                 .Select(type => type.AdoxioName)
                                 .ToList();
+                            Console.WriteLine($"Endorsements: {JsonConvert.SerializeObject(endorsements)}");
                         }
                     }
                     var row = dynamicsApplication.ToSummaryViewModel();

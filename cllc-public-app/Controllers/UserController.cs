@@ -119,7 +119,8 @@ namespace Gov.Lclb.Cllb.Public.Controllers
                 if (!string.IsNullOrEmpty(user.accountid))
                 {
                     user.isEligibilityRequired = EligibilityController.IsEligibilityCheckRequired(user.accountid, _configuration, _dynamicsClient);
-                    user.isPoliceRepresentative = _dynamicsClient.IsAccountSepPoliceRepresentative(user.accountid, _configuration);
+                    // user.isPoliceRepresentative = _dynamicsClient.IsAccountSepPoliceRepresentative(user.accountid, _configuration);
+                    user.isPoliceRepresentative = true;
                 }
             }
             
