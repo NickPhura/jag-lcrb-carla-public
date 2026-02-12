@@ -471,11 +471,33 @@ namespace Gov.Jag.Lcrb.OneStopService
         [AutomaticRetry(Attempts = 0)]
         public async Task CheckForNewLicences(PerformContext hangfireContext)
         {
-            IDynamicsClient dynamicsClient = DynamicsSetupUtil.SetupDynamics(_configuration);
             if (hangfireContext != null)
             {
                 hangfireContext.WriteLine("Starting check for new OneStop queue items job.");
             }
+
+            IDynamicsClient dynamicsClient = null;
+            try
+            {
+                dynamicsClient = DynamicsSetupUtil.SetupDynamics(_configuration);
+                if (hangfireContext != null)
+                {
+                    hangfireContext.WriteLine("Successfully created Dynamics client.");
+                }
+            }
+            catch (Exception ex)
+            {
+                if (hangfireContext != null)
+                {
+                    hangfireContext.WriteLine($"ERROR: Failed to setup Dynamics client: {ex.Message}");
+                }
+                if (Log.Logger != null)
+                {
+                    Log.Logger.Error(ex, "Failed to setup Dynamics client in CheckForNewLicences");
+                }
+                throw;
+            }
+
             IList<MicrosoftDynamicsCRMadoxioOnestopmessageitem> result;
 
             try
@@ -489,10 +511,16 @@ namespace Gov.Jag.Lcrb.OneStopService
                 if (hangfireContext != null)
                 {
                     hangfireContext.WriteLine("Error getting Licences");
+                    hangfireContext.WriteLine($"Status Code: {odee.Response?.StatusCode}");
                     hangfireContext.WriteLine("Request:");
                     hangfireContext.WriteLine(odee.Request.Content);
                     hangfireContext.WriteLine("Response:");
                     hangfireContext.WriteLine(odee.Response.Content);
+                }
+
+                if (Log.Logger != null)
+                {
+                    Log.Logger.Error(odee, $"Dynamics API error: {odee.Response?.StatusCode}");
                 }
 
                 // fail if we can't get results.

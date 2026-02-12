@@ -39,6 +39,7 @@ namespace Gov.Lclb.Cllb.Interfaces
 
             var tokenUrl = $"https://login.microsoftonline.com/{aadTenantId}/oauth2/v2.0/token";
             using var httpClient = new HttpClient();
+
             var pairs = new Dictionary<string, string>
             {
                 { "grant_type", "client_credentials" },
@@ -49,18 +50,36 @@ namespace Gov.Lclb.Cllb.Interfaces
 
             var content = new FormUrlEncodedContent(pairs);
 
-            var response = httpClient.PostAsync(tokenUrl, content).Result;
+            HttpResponseMessage response;
+            try
+            {
+                response = httpClient.PostAsync(tokenUrl, content).Result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to request Dataverse token from {tokenUrl}: {ex.Message}", ex);
+            }
 
             var resultContent = response.Content.ReadAsStringAsync().Result;
 
             if (!response.IsSuccessStatusCode)
             {
-                throw new Exception($"Dataverse token request failed: {resultContent}");
+                throw new Exception($"Dataverse token request failed with status {response.StatusCode}: {resultContent}");
             }
 
             var result = JsonConvert.DeserializeObject<Dictionary<string, object>>(resultContent);
 
+            if (result == null || !result.ContainsKey("access_token"))
+            {
+                throw new Exception($"Dataverse token response missing access_token: {resultContent}");
+            }
+
             string token = result["access_token"].ToString();
+
+            if (string.IsNullOrEmpty(token))
+            {
+                throw new Exception("Dataverse access_token is null or empty");
+            }
 
             return new TokenCredentials(token);
         }
