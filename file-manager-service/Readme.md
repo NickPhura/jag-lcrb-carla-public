@@ -2,16 +2,30 @@
 
 The purpose of the file manager service is to act as an interface to SharePoint.
 
-# gRPC
+## Development
 
-The file manager service exposes a gRPC API.
+File manager is a .NET 6.0 application. As such you can use an IDE such as Visual Studio or VS Code to edit the files.
 
-See `Services/FileManagerService.cs`.
+## Installation
 
-# HTTP
+Templates for OpenShift deployment are in the `openshift` directory
 
-The file manager service exposes an HTTP API.
+## Secrets
 
-See `Controllers/FileManagerController.cs`.
+See `file-manager-service.csproj` -> `user secrets`.
 
-Important: The HTTP API only exists as a wrapper around the gRPC API, which is the source of truth. This was added to make it easier for external systems to talk to the file manager service, if they didn't or couldn't make native gRPC calls.
+```JSON
+{
+  "ASPNETCORE_ENVIRONMENT": "Development",
+
+  "JWT_TOKEN_KEY": "<token_key>",
+  "JWT_VALID_AUDIENCE": "http://localhost:5000",
+  "JWT_VALID_ISSUER": "http://localhost:5000",
+
+  "SHAREPOINT_ODATA_URI": "https://bcgov.sharepoint.com/sites/lcrb-cllceDEV",
+  "SHAREPOINT_WEBNAME": "lcrb-cllceDEV",
+  "SHAREPOINT_AAD_TENANTID": "<tenant_id>",
+  "SHAREPOINT_CLIENT_ID": "<client_id>",
+  "SHAREPOINT_CLIENT_SECRET": "<client_secret>"
+}
+```
