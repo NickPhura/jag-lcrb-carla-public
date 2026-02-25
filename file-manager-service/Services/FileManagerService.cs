@@ -4,9 +4,11 @@ using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
+using Gov.Jag.PillPressRegistry.Interfaces;
 using Gov.Lclb.Cllb.Interfaces;
 using Grpc.Core;
 using Microsoft.AspNetCore.Authorization;
@@ -94,7 +96,7 @@ public class FileManagerService : FileManager.FileManagerBase
 
         var listTitle = GetSharePointFolderInternalName(request.EntityName);
 
-        var _sharePointFileManager = new SharePointFileManager(_configuration, _loggerFactory);
+        var _sharePointFileManager = SharePointFileManager.Create(_configuration, _loggerFactory);
 
         CreateDocumentLibraryIfMissing(listTitle, GetSharePointFolderInternalName(request.EntityName));
 
@@ -170,7 +172,7 @@ public class FileManagerService : FileManager.FileManagerBase
             return Task.FromResult(result);
         }
 
-        var _sharePointFileManager = new SharePointFileManager(_configuration, _loggerFactory);
+        var _sharePointFileManager = SharePointFileManager.Create(_configuration, _loggerFactory);
 
         List<SharePointFileDetailsList> fileDetailsList = null;
         try
@@ -183,9 +185,21 @@ public class FileManagerService : FileManager.FileManagerBase
                 )
                 .GetAwaiter()
                 .GetResult();
+            Console.WriteLine($"File details list count: {fileDetailsList?.Count}");
+            Console.WriteLine($"Checking for file with ServerRelativeUrl: {request.ServerRelativeUrl}");
+            // log all file details
+            Console.WriteLine("File details:");
             if (fileDetailsList != null)
             {
-                var hasFile = fileDetailsList.Any(file => file.ServerRelativeUrl == request.ServerRelativeUrl);
+                foreach (var file in fileDetailsList)
+                {
+                    Console.WriteLine($" - {JsonSerializer.Serialize(file)}");
+                }
+
+                var hasFile = fileDetailsList.Any(file =>
+                    Uri.UnescapeDataString(file.ServerRelativeUrl ?? string.Empty)
+                    == Uri.UnescapeDataString(request.ServerRelativeUrl ?? string.Empty)
+                );
 
                 if (hasFile)
                 {
@@ -231,7 +245,7 @@ public class FileManagerService : FileManager.FileManagerBase
 
         var logUrl = WordSanitizer.Sanitize(request.ServerRelativeUrl);
 
-        var _sharePointFileManager = new SharePointFileManager(_configuration, _loggerFactory);
+        var _sharePointFileManager = SharePointFileManager.Create(_configuration, _loggerFactory);
 
         try
         {
@@ -280,7 +294,7 @@ public class FileManagerService : FileManager.FileManagerBase
         }
 
         var logUrl = WordSanitizer.Sanitize(request.ServerRelativeUrl);
-        var _sharePointFileManager = new SharePointFileManager(_configuration, _loggerFactory);
+        var _sharePointFileManager = SharePointFileManager.Create(_configuration, _loggerFactory);
 
         try
         {
@@ -334,7 +348,7 @@ public class FileManagerService : FileManager.FileManagerBase
                 return Task.FromResult(result);
             }
 
-            var _sharePointFileManager = new SharePointFileManager(_configuration, _loggerFactory);
+            var _sharePointFileManager = SharePointFileManager.Create(_configuration, _loggerFactory);
 
             CreateDocumentLibraryIfMissing(
                 GetSharePointFolderInternalName(request.EntityName),
@@ -393,7 +407,7 @@ public class FileManagerService : FileManager.FileManagerBase
                         $"/adoxio_application/{request.FolderName}/{request.DocumentType}__disable_sharepoint_integration.pdf",
                     Size = 10240,
                     TimeCreated = Timestamp.FromDateTime(DateTime.UtcNow),
-                    TimeLastModified = Timestamp.FromDateTime(DateTime.UtcNow)
+                    TimeLastModified = Timestamp.FromDateTime(DateTime.UtcNow),
                 }
             );
             return Task.FromResult(result);
@@ -401,7 +415,7 @@ public class FileManagerService : FileManager.FileManagerBase
 
         // Get the file details list in folder
         List<SharePointFileDetailsList> fileDetailsList = null;
-        var _sharePointFileManager = new SharePointFileManager(_configuration, _loggerFactory);
+        var _sharePointFileManager = SharePointFileManager.Create(_configuration, _loggerFactory);
         try
         {
             fileDetailsList = _sharePointFileManager
@@ -436,7 +450,7 @@ public class FileManagerService : FileManager.FileManagerBase
                         ServerRelativeUrl = item.ServerRelativeUrl,
                         Size = int.Parse(item.Length),
                         TimeCreated = Timestamp.FromDateTime(parsedCreateDate),
-                        TimeLastModified = Timestamp.FromDateTime(parsedLastModified)
+                        TimeLastModified = Timestamp.FromDateTime(parsedLastModified),
                     };
 
                     result.Files.Add(newItem);
@@ -480,7 +494,7 @@ public class FileManagerService : FileManager.FileManagerBase
 
         try
         {
-            var _sharePointFileManager = new SharePointFileManager(_configuration, _loggerFactory);
+            var _sharePointFileManager = SharePointFileManager.Create(_configuration, _loggerFactory);
 
             // Ask SharePoint whether this filename would be truncated upon upload
             var listTitle = GetSharePointFolderInternalName(request.EntityName);
@@ -509,7 +523,7 @@ public class FileManagerService : FileManager.FileManagerBase
     /// <param name="documentTemplateUrl"></param>
     private void CreateDocumentLibraryIfMissing(string listTitle, string documentTemplateUrl = null)
     {
-        var _sharePointFileManager = new SharePointFileManager(_configuration, _loggerFactory);
+        var _sharePointFileManager = SharePointFileManager.Create(_configuration, _loggerFactory);
         var exists = _sharePointFileManager.DocumentLibraryExists(listTitle).GetAwaiter().GetResult();
         if (!exists)
         {
