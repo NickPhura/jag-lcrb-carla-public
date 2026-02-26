@@ -24,6 +24,7 @@ using Gov.Lclb.Cllb.Public.Extensions;
 using Gov.Lclb.Cllb.Services.FileManager;
 using Contact = Gov.Lclb.Cllb.Public.ViewModels.Contact;
 using Gov.Lclb.Cllb.Public.Repositories;
+using System.Text.Json;
 
 namespace Gov.Lclb.Cllb.Public.Controllers
 {
@@ -541,6 +542,9 @@ namespace Gov.Lclb.Cllb.Public.Controllers
                 // create a new account
                 account = new MicrosoftDynamicsCRMaccount();
                 Boolean copyIfNull = true;
+                Console.WriteLine("11111111111111111111111111111111111");
+                Console.WriteLine(JsonConvert.SerializeObject(item));
+                Console.WriteLine("11111111111111111111111111111111111");
                 account.CopyValues(item, copyIfNull);
                 // business type must be set only during creation, not in update (removed from copyValues() )
                 account.AdoxioBusinesstype = (int)Enum.Parse(typeof(AdoxioApplicantTypeCodes), item.businessType, true);
@@ -555,6 +559,10 @@ namespace Gov.Lclb.Cllb.Public.Controllers
                 mustCreateContactToAccountLink = true;
 
                 account.AdoxioAccounttype = (int)AdoxioAccountTypeCodes.Applicant;
+
+                Console.WriteLine("2222222222222222222222222222222222222222");
+                Console.WriteLine(JsonConvert.SerializeObject(bceidBusiness));
+                Console.WriteLine("22222222222222222222222222222222222222");
 
                 if (bceidBusiness != null)
                 {
@@ -571,6 +579,10 @@ namespace Gov.Lclb.Cllb.Public.Controllers
                     // 7-29-19 - We are not currently collecting the incorporation number
                     account.AdoxioBcincorporationnumber = bceidBusiness.incorporationNumber;
                 }
+
+                Console.WriteLine("33333333333333333333333333333333333333333333333");
+                Console.WriteLine(JsonConvert.SerializeObject(account));
+                Console.WriteLine("33333333333333333333333333333333333333333333333");
 
                 // sets Business type with numerical value found in Adoxio_applicanttypecodes
                 // using account.businessType which is set in bceid-confirmation.component.ts
